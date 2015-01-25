@@ -40,7 +40,7 @@ def getRadioList(start, end):
         data = ujson.loads(json)
         for item in data['list']:
             if item['isChannel'] == True:
-                radio = "[%s] %s" % (item['channel_id'], item['channel_title'])
+                radio = (item['channel_id'], item['channel_title'])
                 radioList.append(radio)
     return radioList
 
@@ -60,10 +60,16 @@ def PrintChannel():
 
 
 def PrintList():
+    from prettytable import PrettyTable
+    x = PrettyTable()
+    x.field_names = ['頻道1', '名稱1', '頻道2', '名稱2']
     start, end = getPageSize()
-    list = getRadioList(start, end)
-    for l in list:
-        print l
+    radioList = getRadioList(start, end)
+
+    length = len(radioList)
+    for i in range(0, length, 2):
+        x.add_row([radioList[i][0], radioList[i][1], radioList[i+1][0], radioList[i+1][1]])
+    print x
 
 
 if __name__ == "__main__":
