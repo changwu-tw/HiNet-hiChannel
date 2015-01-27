@@ -5,7 +5,7 @@ import ujson
 import urllib2
 
 from docopt import docopt
-from subprocess import call
+from subprocess import Popen
 
 
 option = """
@@ -23,7 +23,7 @@ def getRadioLink(id):
     json = urllib2.urlopen(CHANNEL_URL.format(id)).read()
     if json != '{"msg":"請選擇電台"}':
         data = ujson.loads(json)
-        return data['channel_title'], data['playRadio']
+        return data['channel_title'], data['playRadio'], data['programName']
     return None
 
 
@@ -82,16 +82,17 @@ if __name__ == "__main__":
     elif opt['<channel>'] is not None:
         try:
             channel = int(opt['<channel>'])
-            if not getRadioLink(channel):
-                print('請輸入電台頻道..')
+            info = getRadioLink(channel)
+            if not info:
+                print u'請輸入電台頻道..'
                 PrintChannel()
             else:
-                title, url = getRadioLink(channel)
-                print "Playing %s" % title
+                title, url, programName = info
+                print u'{1}: 播放{0}'.format(programName, title)
                 cmd = "/opt/homebrew-cask/Caskroom/vlc/2.1.5/VLC.app/Contents/MacOS/VLC"
-                call([cmd, url])
+                Popen(['nohup', cmd, url])
         except ValueError:
-            print('請輸入電台頻道..')
+            print u'請輸入電台頻道..'
             PrintChannel()
     else:
         print opt
