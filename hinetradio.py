@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import requests
 import ujson
-import urllib2
 
 from docopt import docopt
 from subprocess import Popen
-
 
 option = """
 Usage:
@@ -18,26 +17,30 @@ Usage:
 CHANNEL_URL = "http://hichannel.hinet.net/radio/play.do?id={}"
 LIST_PATTERN = "http://hichannel.hinet.net/radio/channelList.do?radioType=&freqType=&freq=&area=&pN={}"
 
+headers = {
+    'Referer': 'http://hichannel.hinet.net/radio/index.do',
+    'User-Agent': 'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.6) Gecko/20091201 Firefox/3.5.6',
+}
+
 
 def getRadioLink(id):
-    json = urllib2.urlopen(CHANNEL_URL.format(id)).read()
-    if json != '{"msg":"請選擇電台"}':
-        data = ujson.loads(json)
+    r = requests.get(CHANNEL_URL.format(id), headers=headers).content.decode('utf-8')
+    if r != u'{"msg":"請選擇電台"}':
+        data = ujson.loads(r)
         return data['channel_title'], data['playRadio'], data['programName']
     return None
 
 
 def getPageSize():
-    json = urllib2.urlopen(LIST_PATTERN.format(1)).read()
-    data = ujson.loads(json)
+    data = requests.get(LIST_PATTERN.format(1)).json()
     return data['pageNo'], data['pageSize']
 
 
 def getRadioList(start, end):
     radioList = []
     for i in range(start, end+1):
-        json = urllib2.urlopen(LIST_PATTERN.format(i)).read()
-        data = ujson.loads(json)
+        r = requests.get(LIST_PATTERN.format(i)).content.decode('utf-8')
+        data = ujson.loads(r)
         for item in data['list']:
             if item['isChannel'] == True:
                 radio = (item['channel_id'], item['channel_title'])
@@ -65,7 +68,6 @@ def PrintList():
     x.field_names = ['頻道1', '名稱1', '頻道2', '名稱2']
     start, end = getPageSize()
     radioList = getRadioList(start, end)
-
     length = len(radioList)
     for i in range(0, length, 2):
         x.add_row([radioList[i][0], radioList[i][1], radioList[i+1][0], radioList[i+1][1]])
@@ -89,7 +91,7 @@ if __name__ == "__main__":
             else:
                 title, url, programName = info
                 print u'{1}: 播放{0}'.format(programName, title)
-                cmd = "/opt/homebrew-cask/Caskroom/vlc/2.1.5/VLC.app/Contents/MacOS/VLC"
+                cmd = "/opt/homebrew-cask/Caskroom/vlc/2.2.1/VLC.app/Contents/MacOS/VLC"
                 Popen(['nohup', cmd, url])
         except ValueError:
             print u'請輸入電台頻道..'
